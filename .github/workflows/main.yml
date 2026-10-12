@@ -5,34 +5,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: Clean
-        run: rm -rf app build.gradle settings.gradle gradle *.html *.zip || true
-      
+        run: rm -rf app build.gradle settings.gradle gradle gradle.properties *.html *.zip || true
       - name: Create project
         run: |
           mkdir -p app/src/main/java/com/infinity/ai
           echo "sdk.dir=$ANDROID_HOME" > local.properties
+          cat > gradle.properties <<'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
           cat > settings.gradle <<'EOF'
           include ':app'
           EOF
           cat > build.gradle <<'EOF'
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
               dependencies {
                   classpath 'com.android.tools.build:gradle:8.2.2'
                   classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"
               }
           }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           EOF
           cat > app/build.gradle <<'EOF'
           apply plugin: 'com.android.application'
@@ -62,7 +56,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
-              <application android:allowBackup="true" android:label="Infinity AI" android:theme="@android:style/Theme.NoTitleBar">
+              <application android:allowBackup="true" android:label="Infinity AI" android:theme="@android:style/Theme.Translucent.NoTitleBar">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -74,19 +68,19 @@ jobs:
           EOF
           cat > app/src/main/java/com/infinity/ai/MainActivity.kt <<'EOF'
           package com.infinity.ai
+          import android.app.Activity
           import android.os.Bundle
           import android.webkit.WebView
           import android.webkit.WebViewClient
-          import androidx.appcompat.app.AppCompatActivity
-          class MainActivity : AppCompatActivity() {
+          class MainActivity : Activity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  val webView = WebView(this)
-                  webView.webViewClient = WebViewClient()
-                  webView.settings.javaScriptEnabled = true
-                  webView.settings.domStorageEnabled = true
-                  webView.loadUrl("https://singular-naiad-8edd22.netlify.app")
-                  setContentView(webView)
+                  val wv = WebView(this)
+                  wv.webViewClient = WebViewClient()
+                  wv.settings.javaScriptEnabled = true
+                  wv.settings.domStorageEnabled = true
+                  wv.loadUrl("https://singular-naiad-8edd22.netlify.app")
+                  setContentView(wv)
               }
           }
           EOF
@@ -103,13 +97,14 @@ jobs:
           echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_HOME/licenses/android-sdk-license
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_HOME/licenses/android-sdk-license
           echo "24333f8a63b6825ea9c5514f83c1059b8ea731ae" >> $ANDROID_HOME/licenses/android-sdk-license
-          yes | sdkmanager --licenses || true
 
-      - name: Build APK
-        uses: gradle/gradle-build-action@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.4
-          arguments: assembleDebug
+
+      - name: Assemble
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
