@@ -9,14 +9,12 @@ jobs:
         run: |
           unzip -o Infinity-SOLO-ZIP-Para-Celu.zip -d . || true
           unzip -o Infinity-AI-GitHub-Listo.zip -d . || true
-          ls -R
+          ls -R | head -n 100
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
       - name: Build APK
         run: |
           chmod +x gradlew
