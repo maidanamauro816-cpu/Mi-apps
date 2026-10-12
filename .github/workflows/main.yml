@@ -6,9 +6,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Create project structure
+      - name: Clean bad zip files
+        run: rm -f *.zip.html *.zip || true
+      
+      - name: Create project
         run: |
-          rm -f Infinity-AI.zip.html || true
           mkdir -p app/src/main/java/com/infinity/ai
           mkdir -p gradle/wrapper
           
@@ -36,6 +38,13 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
+          EOF
+          
+          curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar
+          
+          cat > gradlew <<'EOF'
+          #!/bin/sh
+          exec java -jar gradle/wrapper/gradle-wrapper.jar "$@"
           EOF
           
           cat > app/build.gradle <<'EOF'
@@ -71,7 +80,6 @@ jobs:
               <uses-permission android:name="android.permission.INTERNET" />
               <application
                   android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
                   android:label="Infinity AI"
                   android:theme="@android:style/Theme.NoTitleBar">
                   <activity android:name=".MainActivity" android:exported="true">
@@ -113,9 +121,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build APK
-        uses: gradle/gradle-build-action@v3
-        with:
-          arguments: assembleDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
